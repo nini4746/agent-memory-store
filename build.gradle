@@ -1,0 +1,67 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.4'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'dev.nini'
+version = '0.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    testcontainersVersion = '1.20.2'
+    jqwikVersion = '1.9.0'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // MCP server (JSON-RPC over stdio) is implemented directly; see Plan 09 notes.
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation "net.jqwik:jqwik:${jqwikVersion}"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    // jqwik registers its own engine alongside JUnit Jupiter.
+}
+
+// Benchmark harness (Plan 10) and demo runner (Plan 11) are wired as separate
+// entry points that require live LLM/embedding keys; see those plans.
+tasks.register('benchRun', JavaExec) {
+    group = 'application'
+    description = 'Runs the MemFail-style benchmark harness (requires ANTHROPIC_API_KEY, EMBEDDING_API_KEY).'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.nini.memstore.bench.BenchRunner'
+}
+
+tasks.register('demoRun', JavaExec) {
+    group = 'application'
+    description = 'Runs the 3-session demo scenario (requires ANTHROPIC_API_KEY, EMBEDDING_API_KEY).'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.nini.memstore.demo.DemoRunner'
+}
