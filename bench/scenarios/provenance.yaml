@@ -1,0 +1,45 @@
+# Provenance tracking: a recalled fact must retain a traceable source utterance.
+- id: provenance-01
+  category: provenance
+  description: Kafka decision traces to its source utterance
+  sessions:
+    - source: s
+      offset_days: -5
+      utterances:
+        - content: "We decided to use Kafka for the event stream"
+  extract: true
+  query:
+    text: "Kafka event stream"
+  expect:
+    contains_all: ["Kafka"]
+    inspect_provenance_contains: "Kafka for the event stream"
+
+- id: provenance-02
+  category: provenance
+  description: Auth decision traces to its source utterance
+  sessions:
+    - source: s
+      offset_days: -5
+      utterances:
+        - content: "We decided to use OAuth for authentication"
+  extract: true
+  query:
+    text: "authentication approach"
+  expect:
+    contains_all: ["OAuth"]
+    inspect_provenance_contains: "OAuth for authentication"
+
+- id: provenance-03
+  category: provenance
+  description: Preference traces to its source utterance
+  sessions:
+    - source: s
+      offset_days: -5
+      utterances:
+        - content: "The team prefers monorepo layout for the project"
+  extract: true
+  query:
+    text: "repository layout preference"
+  expect:
+    contains_all: ["monorepo"]
+    inspect_provenance_contains: "prefers monorepo layout"

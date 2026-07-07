@@ -16,6 +16,3 @@ build/
 # Secrets / local env
 .env
 *.local
-
-# Benchmark and demo outputs that require live keys
-bench-report.md

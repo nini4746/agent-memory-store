@@ -32,6 +32,8 @@ dependencies {
 
     // MCP server (JSON-RPC over stdio) is implemented directly; see Plan 09 notes.
     implementation 'com.fasterxml.jackson.core:jackson-databind'
+    // Benchmark scenarios are YAML data files (Plan 10).
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.testcontainers:junit-jupiter'
@@ -65,16 +67,29 @@ tasks.named('test') {
 
 // Benchmark harness (Plan 10) and demo runner (Plan 11) are wired as separate
 // entry points that require live LLM/embedding keys; see those plans.
+// Forwards -D properties for spring/memstore/bench/demo config to a JavaExec JVM.
+def forwardProps = { JavaExec task ->
+    System.properties.each { key, value ->
+        String k = key.toString()
+        if (k.startsWith('spring.') || k.startsWith('memstore.')
+                || k.startsWith('bench.') || k.startsWith('demo.')) {
+            task.systemProperty(k, value.toString())
+        }
+    }
+}
+
 tasks.register('benchRun', JavaExec) {
     group = 'application'
-    description = 'Runs the MemFail-style benchmark harness (requires ANTHROPIC_API_KEY, EMBEDDING_API_KEY).'
+    description = 'Runs the MemFail-style benchmark harness. Uses fake providers by default; real run needs ANTHROPIC_API_KEY, EMBEDDING_API_KEY.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'dev.nini.memstore.bench.BenchRunner'
+    doFirst { forwardProps(it) }
 }
 
 tasks.register('demoRun', JavaExec) {
     group = 'application'
-    description = 'Runs the 3-session demo scenario (requires ANTHROPIC_API_KEY, EMBEDDING_API_KEY).'
+    description = 'Runs the 3-session demo scenario. Uses fake providers by default; real run needs ANTHROPIC_API_KEY, EMBEDDING_API_KEY.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'dev.nini.memstore.demo.DemoRunner'
+    doFirst { forwardProps(it) }
 }

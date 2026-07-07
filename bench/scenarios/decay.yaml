@@ -1,0 +1,115 @@
+# Decay / staleness: aged event facts must expire out of active recall but
+# remain retrievable with include_inactive.
+- id: decay-01
+  category: decay
+  description: Old mobile app release expires
+  sessions:
+    - source: s
+      offset_days: -1
+      utterances:
+        - content: "The mobile app was released last spring"
+  extract: true
+  age:
+    - contains: "mobile"
+      days: 400
+  maintenance: true
+  query:
+    text: "mobile app release"
+  expect:
+    active_hit_count: 0
+    inactive_contains: "released"
+
+- id: decay-02
+  category: decay
+  description: Old hotfix ship event expires
+  sessions:
+    - source: s
+      offset_days: -1
+      utterances:
+        - content: "The hotfix shipped on a Tuesday"
+  extract: true
+  age:
+    - contains: "hotfix"
+      days: 300
+  maintenance: true
+  query:
+    text: "hotfix ship"
+  expect:
+    active_hit_count: 0
+    inactive_contains: "shipped"
+
+- id: decay-03
+  category: decay
+  description: Old incident event expires
+  sessions:
+    - source: s
+      offset_days: -1
+      utterances:
+        - content: "The incident occurred during the deployment window"
+  extract: true
+  age:
+    - contains: "incident"
+      days: 250
+  maintenance: true
+  query:
+    text: "incident deployment"
+  expect:
+    active_hit_count: 0
+    inactive_contains: "occurred"
+
+- id: decay-04
+  category: decay
+  description: Old logo launch event expires
+  sessions:
+    - source: s
+      offset_days: -1
+      utterances:
+        - content: "The new logo launched on the website"
+  extract: true
+  age:
+    - contains: "logo"
+      days: 200
+  maintenance: true
+  query:
+    text: "logo launch"
+  expect:
+    active_hit_count: 0
+    inactive_contains: "launched"
+
+- id: decay-05
+  category: decay
+  description: Old beta release event expires
+  sessions:
+    - source: s
+      offset_days: -1
+      utterances:
+        - content: "The beta was released to early testers"
+  extract: true
+  age:
+    - contains: "beta"
+      days: 180
+  maintenance: true
+  query:
+    text: "beta release testers"
+  expect:
+    active_hit_count: 0
+    inactive_contains: "released"
+
+- id: decay-06
+  category: decay
+  description: Old conference talk event expires
+  sessions:
+    - source: s
+      offset_days: -1
+      utterances:
+        - content: "The keynote launched the conference season"
+  extract: true
+  age:
+    - contains: "keynote"
+      days: 150
+  maintenance: true
+  query:
+    text: "keynote conference"
+  expect:
+    active_hit_count: 0
+    inactive_contains: "launched"

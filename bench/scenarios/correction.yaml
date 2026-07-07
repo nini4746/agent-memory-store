@@ -1,0 +1,145 @@
+# Explicit corrections: memory_correct must retract the target and let the
+# correction win.
+- id: correction-01
+  category: correction
+  description: Deploy target corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided to deploy on AWS"
+  extract: true
+  correct:
+    - target_contains: "AWS"
+      statement: "We decided to deploy on GCP"
+  query:
+    text: "deploy"
+  expect:
+    contains_all: ["GCP"]
+    excludes: ["AWS"]
+
+- id: correction-02
+  category: correction
+  description: Database choice corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided to use MySQL as the database"
+  extract: true
+  correct:
+    - target_contains: "MySQL"
+      statement: "We decided to use PostgreSQL as the database"
+  query:
+    text: "database"
+  expect:
+    contains_all: ["PostgreSQL"]
+    excludes: ["MySQL"]
+
+- id: correction-03
+  category: correction
+  description: Backend language corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided to write the backend in Java"
+  extract: true
+  correct:
+    - target_contains: "Java"
+      statement: "We decided to write the backend in Kotlin"
+  query:
+    text: "backend"
+  expect:
+    contains_all: ["Kotlin"]
+    excludes: ["Java"]
+
+- id: correction-04
+  category: correction
+  description: Indentation preference corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "The team prefers tabs for indentation"
+  extract: true
+  correct:
+    - target_contains: "tabs"
+      statement: "The team prefers spaces for indentation"
+  query:
+    text: "indentation"
+  expect:
+    contains_all: ["spaces"]
+    excludes: ["tabs"]
+
+- id: correction-05
+  category: correction
+  description: Hosting corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided to host on Heroku"
+  extract: true
+  correct:
+    - target_contains: "Heroku"
+      statement: "We decided to host on Fly"
+  query:
+    text: "host"
+  expect:
+    contains_all: ["Fly"]
+    excludes: ["Heroku"]
+
+- id: correction-06
+  category: correction
+  description: Primary region corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided the primary region is us-east"
+  extract: true
+  correct:
+    - target_contains: "us-east"
+      statement: "We decided the primary region is us-west"
+  query:
+    text: "primary region"
+  expect:
+    contains_all: ["us-west"]
+    excludes: ["us-east"]
+
+- id: correction-07
+  category: correction
+  description: API style corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided the API uses REST"
+  extract: true
+  correct:
+    - target_contains: "REST"
+      statement: "We decided the API uses GraphQL"
+  query:
+    text: "API"
+  expect:
+    contains_all: ["GraphQL"]
+    excludes: ["REST"]
+
+- id: correction-08
+  category: correction
+  description: Package manager corrected
+  sessions:
+    - source: s
+      offset_days: -20
+      utterances:
+        - content: "We decided to use Yarn as the package manager"
+  extract: true
+  correct:
+    - target_contains: "Yarn"
+      statement: "We decided to use pnpm as the package manager"
+  query:
+    text: "package manager"
+  expect:
+    contains_all: ["pnpm"]
+    excludes: ["Yarn"]

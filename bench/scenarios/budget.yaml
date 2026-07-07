@@ -1,0 +1,70 @@
+# Budget / routing: retrieval must never exceed the token budget, so a small
+# budget returns only a subset of the matching facts.
+- id: budget-01
+  category: budget
+  description: Eight guidelines, tight budget returns a subset
+  sessions:
+    - source: s
+      offset_days: -5
+      utterances:
+        - content: "We decided that guideline alpha applies to services"
+        - content: "We decided that guideline bravo applies to services"
+        - content: "We decided that guideline charlie applies to services"
+        - content: "We decided that guideline delta applies to services"
+        - content: "We decided that guideline echo applies to services"
+        - content: "We decided that guideline foxtrot applies to services"
+        - content: "We decided that guideline golf applies to services"
+        - content: "We decided that guideline hotel applies to services"
+  extract: true
+  query:
+    text: "guideline services"
+    budget_tokens: 40
+  expect:
+    tokens_within_budget: true
+    active_hit_count_lt: 8
+
+- id: budget-02
+  category: budget
+  description: Six standards, very tight budget returns a subset
+  sessions:
+    - source: s
+      offset_days: -5
+      utterances:
+        - content: "We decided that standard one governs the pipeline"
+        - content: "We decided that standard two governs the pipeline"
+        - content: "We decided that standard three governs the pipeline"
+        - content: "We decided that standard four governs the pipeline"
+        - content: "We decided that standard five governs the pipeline"
+        - content: "We decided that standard six governs the pipeline"
+  extract: true
+  query:
+    text: "standard pipeline"
+    budget_tokens: 30
+  expect:
+    tokens_within_budget: true
+    active_hit_count_lt: 6
+
+- id: budget-03
+  category: budget
+  description: Ten policies, minimal budget returns a subset
+  sessions:
+    - source: s
+      offset_days: -5
+      utterances:
+        - content: "We decided that policy alpha covers access control"
+        - content: "We decided that policy bravo covers access control"
+        - content: "We decided that policy charlie covers access control"
+        - content: "We decided that policy delta covers access control"
+        - content: "We decided that policy echo covers access control"
+        - content: "We decided that policy foxtrot covers access control"
+        - content: "We decided that policy golf covers access control"
+        - content: "We decided that policy hotel covers access control"
+        - content: "We decided that policy india covers access control"
+        - content: "We decided that policy juliet covers access control"
+  extract: true
+  query:
+    text: "policy access control"
+    budget_tokens: 25
+  expect:
+    tokens_within_budget: true
+    active_hit_count_lt: 10

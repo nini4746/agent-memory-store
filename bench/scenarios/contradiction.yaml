@@ -1,0 +1,190 @@
+# Contradiction updates: the newer session's fact must supersede the older one.
+- id: contradiction-01
+  category: contradiction
+  description: PostgreSQL version updated across sessions
+  sessions:
+    - source: q1
+      offset_days: -120
+      utterances:
+        - content: "We decided to use PostgreSQL version 15"
+    - source: q2
+      offset_days: -10
+      utterances:
+        - content: "We decided to use PostgreSQL version 17"
+  extract: true
+  query:
+    text: "PostgreSQL version"
+  expect:
+    contains_all: ["17"]
+    excludes: ["15"]
+
+- id: contradiction-02
+  category: contradiction
+  description: Redis version updated across sessions
+  sessions:
+    - source: q1
+      offset_days: -100
+      utterances:
+        - content: "We decided to use Redis version 6"
+    - source: q2
+      offset_days: -5
+      utterances:
+        - content: "We decided to use Redis version 7"
+  extract: true
+  query:
+    text: "Redis version"
+  expect:
+    contains_all: ["7"]
+    excludes: ["6"]
+
+- id: contradiction-03
+  category: contradiction
+  description: Request timeout changed
+  sessions:
+    - source: q1
+      offset_days: -90
+      utterances:
+        - content: "We decided the request timeout is 30 seconds"
+    - source: q2
+      offset_days: -3
+      utterances:
+        - content: "We decided the request timeout is 60 seconds"
+  extract: true
+  query:
+    text: "request timeout"
+  expect:
+    contains_all: ["60"]
+    excludes: ["30"]
+
+- id: contradiction-04
+  category: contradiction
+  description: Replica count changed
+  sessions:
+    - source: q1
+      offset_days: -80
+      utterances:
+        - content: "We decided the replica count is 3"
+    - source: q2
+      offset_days: -2
+      utterances:
+        - content: "We decided the replica count is 5"
+  extract: true
+  query:
+    text: "replica count"
+  expect:
+    contains_all: ["5"]
+    excludes: ["3"]
+
+- id: contradiction-05
+  category: contradiction
+  description: Service port changed
+  sessions:
+    - source: q1
+      offset_days: -70
+      utterances:
+        - content: "We decided the service port is 8080"
+    - source: q2
+      offset_days: -4
+      utterances:
+        - content: "We decided the service port is 9090"
+  extract: true
+  query:
+    text: "service port"
+  expect:
+    contains_all: ["9090"]
+    excludes: ["8080"]
+
+- id: contradiction-06
+  category: contradiction
+  description: Log retention changed
+  sessions:
+    - source: q1
+      offset_days: -60
+      utterances:
+        - content: "We decided the log retention is 30 days"
+    - source: q2
+      offset_days: -1
+      utterances:
+        - content: "We decided the log retention is 90 days"
+  extract: true
+  query:
+    text: "log retention"
+  expect:
+    contains_all: ["90"]
+    excludes: ["30"]
+
+- id: contradiction-07
+  category: contradiction
+  description: Cache size changed
+  sessions:
+    - source: q1
+      offset_days: -55
+      utterances:
+        - content: "We decided the cache size is 256 megabytes"
+    - source: q2
+      offset_days: -6
+      utterances:
+        - content: "We decided the cache size is 512 megabytes"
+  extract: true
+  query:
+    text: "cache size"
+  expect:
+    contains_all: ["512"]
+    excludes: ["256"]
+
+- id: contradiction-08
+  category: contradiction
+  description: Worker pool size changed
+  sessions:
+    - source: q1
+      offset_days: -50
+      utterances:
+        - content: "We decided the worker pool size is 4"
+    - source: q2
+      offset_days: -7
+      utterances:
+        - content: "We decided the worker pool size is 8"
+  extract: true
+  query:
+    text: "worker pool size"
+  expect:
+    contains_all: ["8"]
+    excludes: ["4"]
+
+- id: contradiction-09
+  category: contradiction
+  description: Public API version changed
+  sessions:
+    - source: q1
+      offset_days: -45
+      utterances:
+        - content: "We decided the public API version is 1"
+    - source: q2
+      offset_days: -8
+      utterances:
+        - content: "We decided the public API version is 2"
+  extract: true
+  query:
+    text: "public API version"
+  expect:
+    contains_all: ["2"]
+    excludes: ["1"]
+
+- id: contradiction-10
+  category: contradiction
+  description: Monthly budget changed
+  sessions:
+    - source: q1
+      offset_days: -40
+      utterances:
+        - content: "We decided the monthly budget is 1000 dollars"
+    - source: q2
+      offset_days: -9
+      utterances:
+        - content: "We decided the monthly budget is 2000 dollars"
+  extract: true
+  query:
+    text: "monthly budget"
+  expect:
+    contains_all: ["2000"]
+    excludes: ["1000"]
