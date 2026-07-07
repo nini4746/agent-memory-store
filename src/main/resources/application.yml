@@ -41,7 +41,7 @@ memstore:
   llm:
     provider: ${MEMSTORE_LLM_PROVIDER:fake}
     api-key: ${ANTHROPIC_API_KEY:}
-    model: ${MEMSTORE_LLM_MODEL:claude-sonnet-4-5}
+    model: ${MEMSTORE_LLM_MODEL:claude-opus-4-8}
     base-url: ${MEMSTORE_LLM_BASE_URL:https://api.anthropic.com}
   # Retrieval scoring weights (Plan 05). Defaults match SPEC R3.
   scoring:
