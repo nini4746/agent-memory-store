@@ -74,7 +74,9 @@ public class FactStore {
                 newFact.type(), newFact.confidence(), timestamp, timestamp);
         fact.setNeedsReview(newFact.needsReview());
         fact.setEmbeddingModel(newFact.embeddingModel());
-        facts.save(fact);
+        // Flush the insert so the subsequent native UPDATE for the (unmapped)
+        // embedding column targets an existing row within the same transaction.
+        facts.saveAndFlush(fact);
 
         if (newFact.embedding() != null) {
             writeEmbedding(fact.getId(), newFact.embedding());
@@ -90,7 +92,7 @@ public class FactStore {
                 toVectorLiteral(embedding), factId);
     }
 
-    static String toVectorLiteral(float[] embedding) {
+    public static String toVectorLiteral(float[] embedding) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < embedding.length; i++) {
             if (i > 0) {
