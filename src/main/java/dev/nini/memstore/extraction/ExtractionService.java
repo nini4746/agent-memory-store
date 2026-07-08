@@ -103,8 +103,12 @@ public class ExtractionService {
             FactCandidate fc = new FactCandidate(candidate.statement(), candidate.type(),
                     confidence, embedding, embeddingProvider.modelId(), provenanceIds,
                     sessionId, maxSeq, llm.isCorrection(candidate.statement()));
-            conflictResolver.handleNewFact(fc);
-            created++;
+            ConflictResolver.Resolution resolution = conflictResolver.handleNewFact(fc);
+            if (resolution.createdNew()) {
+                created++;
+            } else {
+                confirmed++;
+            }
         }
         return new ExtractionResult(created, confirmed, skipped);
     }

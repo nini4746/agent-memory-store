@@ -10,10 +10,19 @@ import dev.nini.memstore.domain.FactEntity;
 public interface ConflictResolver {
 
     /**
+     * Outcome of resolving a candidate: the fact that now represents it, and
+     * whether a new fact row was created ({@code false} when the candidate was
+     * classified as a duplicate and the existing fact was confirmed instead).
+     */
+    record Resolution(FactEntity fact, boolean createdNew) {
+    }
+
+    /**
      * Persists the candidate, resolving any conflict with existing active facts.
      *
-     * @return the fact that now represents this candidate (newly created, or the
-     *         existing one when the candidate was a duplicate)
+     * @return the resolution carrying the fact that now represents this
+     *         candidate (newly created, or the existing one when the candidate
+     *         was a duplicate)
      */
-    FactEntity handleNewFact(FactCandidate candidate);
+    Resolution handleNewFact(FactCandidate candidate);
 }

@@ -31,6 +31,7 @@ public class DefaultConflictResolver implements ConflictResolver {
     private static final Logger log = LoggerFactory.getLogger(DefaultConflictResolver.class);
     private static final double CANDIDATE_THRESHOLD = 0.80;
     private static final double REVIVAL_THRESHOLD = 0.92;
+    private static final double CORRECTION_CONFIDENCE = 0.95;
 
     private record ProvenanceContext(OffsetDateTime sessionStartedAt, int seq) {
     }
@@ -54,11 +55,11 @@ public class DefaultConflictResolver implements ConflictResolver {
     }
 
     @Override
-    public FactEntity handleNewFact(FactCandidate candidate) {
+    public Resolution handleNewFact(FactCandidate candidate) {
         // A statement matching a retracted fact must not auto-revive it (R4-A4).
         if (matchesRetracted(candidate)) {
             log.info("candidate matches a retracted fact; saving as needs_review");
-            return saveNew(candidate, true);
+            return created(saveNew(candidate, true));
         }
 
         List<ScoredFactRow> nearby;
@@ -67,10 +68,10 @@ public class DefaultConflictResolver implements ConflictResolver {
                     .stream().filter(r -> r.similarity() >= CANDIDATE_THRESHOLD).toList();
         } catch (RuntimeException e) {
             log.warn("vector search failed during conflict detection: {}", e.getMessage());
-            return saveNew(candidate, false);
+            return created(saveNew(candidate, false));
         }
         if (nearby.isEmpty()) {
-            return saveNew(candidate, false);
+            return created(saveNew(candidate, false));
         }
 
         ScoredFactRow contradiction = null;
@@ -81,11 +82,11 @@ public class DefaultConflictResolver implements ConflictResolver {
                 judgment = llm.classifyPair(candidate.statement(), existing.statement());
             } catch (RuntimeException e) {
                 log.warn("pair classification failed; saving candidate as needs_review");
-                return saveNew(candidate, true);
+                return created(saveNew(candidate, true));
             }
             switch (judgment) {
                 case DUPLICATE -> {
-                    return factStore.confirm(existing.id());
+                    return new Resolution(factStore.confirm(existing.id()), false);
                 }
                 case CONTRADICTS -> {
                     if (contradiction == null) {
@@ -104,17 +105,33 @@ public class DefaultConflictResolver implements ConflictResolver {
         }
 
         if (contradiction != null) {
-            return resolveContradiction(candidate, contradiction);
+            return created(resolveContradiction(candidate, contradiction));
         }
         if (refinement != null) {
             FactEntity saved = saveNew(candidate, false);
             factStore.addRelation(saved.getId(), refinement.id(), RelationType.REFINES);
-            return saved;
+            return created(saved);
         }
-        return saveNew(candidate, false);
+        return created(saveNew(candidate, false));
+    }
+
+    private static Resolution created(FactEntity fact) {
+        return new Resolution(fact, true);
     }
 
     private FactEntity resolveContradiction(FactCandidate candidate, ScoredFactRow existing) {
+        // Explicit correction outranks every recency rule (SPEC R4 priority:
+        // explicit correction > newest session > newest utterance): the target
+        // is retracted (not superseded) and the correction is stored at
+        // confidence 0.95, then propagation is triggered.
+        if (candidate.explicitCorrection()) {
+            FactEntity saved = saveNew(candidate, false, CORRECTION_CONFIDENCE);
+            factStore.transition(existing.id(), FactStatus.RETRACTED, saved.getId());
+            factStore.addRelation(saved.getId(), existing.id(), RelationType.SUPERSEDES);
+            propagation.propagateFrom(existing.id());
+            return saved;
+        }
+
         ProvenanceContext existingCtx = provenanceContext(existing.id());
         OffsetDateTime candidateStarted = candidateSessionStart(candidate);
 
@@ -164,9 +181,14 @@ public class DefaultConflictResolver implements ConflictResolver {
     }
 
     private FactEntity saveNew(FactCandidate candidate, boolean needsReview) {
+        return saveNew(candidate, needsReview, candidate.confidence());
+    }
+
+    private FactEntity saveNew(FactCandidate candidate, boolean needsReview,
+                               double confidence) {
         return factStore.save(
                 new FactStore.NewFact(candidate.statement(), candidate.type(),
-                        candidate.confidence(), candidate.embedding(),
+                        confidence, candidate.embedding(),
                         candidate.embeddingModel(), needsReview),
                 candidate.provenanceUtteranceIds());
     }

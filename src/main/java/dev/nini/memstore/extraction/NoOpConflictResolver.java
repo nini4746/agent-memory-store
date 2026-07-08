@@ -1,6 +1,5 @@
 package dev.nini.memstore.extraction;
 
-import dev.nini.memstore.domain.FactEntity;
 import dev.nini.memstore.service.FactStore;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +18,11 @@ public class NoOpConflictResolver implements ConflictResolver {
     }
 
     @Override
-    public FactEntity handleNewFact(FactCandidate candidate) {
-        return factStore.save(
+    public Resolution handleNewFact(FactCandidate candidate) {
+        return new Resolution(factStore.save(
                 new FactStore.NewFact(candidate.statement(), candidate.type(),
                         candidate.confidence(), candidate.embedding(),
                         candidate.embeddingModel(), false),
-                candidate.provenanceUtteranceIds());
+                candidate.provenanceUtteranceIds()), true);
     }
 }

@@ -128,7 +128,7 @@ public class McpToolService {
         FactCandidate candidate = new FactCandidate(statement, type, 0.9, embedding,
                 embeddingProvider.modelId(), List.of(utterance.getId()), sessionId,
                 utterance.getSeq(), false);
-        FactEntity fact = conflictResolver.handleNewFact(candidate);
+        FactEntity fact = conflictResolver.handleNewFact(candidate).fact();
         return Map.of("fact_id", fact.getId().toString(), "status",
                 fact.getStatus().code());
     }

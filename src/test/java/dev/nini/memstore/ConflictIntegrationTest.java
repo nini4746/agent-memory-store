@@ -84,8 +84,10 @@ class ConflictIntegrationTest extends AbstractPostgresIntegrationTest {
                 List.of(new SessionLogService.LogEntry("user", "seed utterance")));
         UUID utteranceId = sessionLog.utterancesForSession(session).get(0).getId();
 
-        FactEntity a = conflictResolver.handleNewFact(candidate(OLD, session, utteranceId, 0));
-        FactEntity b = conflictResolver.handleNewFact(candidate(NEW, session, utteranceId, 0));
+        FactEntity a = conflictResolver.handleNewFact(
+                candidate(OLD, session, utteranceId, 0)).fact();
+        FactEntity b = conflictResolver.handleNewFact(
+                candidate(NEW, session, utteranceId, 0)).fact();
 
         FactEntity reloadedA = factStore.find(a.getId()).orElseThrow();
         FactEntity reloadedB = factStore.find(b.getId()).orElseThrow();
@@ -102,11 +104,11 @@ class ConflictIntegrationTest extends AbstractPostgresIntegrationTest {
         UUID utteranceId = sessionLog.utterancesForSession(session).get(0).getId();
 
         FactEntity original = conflictResolver.handleNewFact(
-                candidate(OLD, session, utteranceId, 0));
+                candidate(OLD, session, utteranceId, 0)).fact();
         factStore.transition(original.getId(), FactStatus.RETRACTED, null);
 
         FactEntity reappeared = conflictResolver.handleNewFact(
-                candidate(OLD, session, utteranceId, 0));
+                candidate(OLD, session, utteranceId, 0)).fact();
 
         assertThat(reappeared.getId()).isNotEqualTo(original.getId());
         assertThat(reappeared.getStatus()).isEqualTo(FactStatus.ACTIVE);
@@ -115,10 +117,75 @@ class ConflictIntegrationTest extends AbstractPostgresIntegrationTest {
                 .isEqualTo(FactStatus.RETRACTED);
     }
 
+    @Test
+    void r4_explicitCorrectionOutranksNewerSession() {
+        // Existing fact lives in the NEWER session; the correction candidate
+        // comes from an OLDER session. Priority "explicit correction > newest
+        // session" means the correction must still win, and the loser must be
+        // retracted (not superseded) with the correction stored at 0.95.
+        OffsetDateTime june = OffsetDateTime.now().minusMonths(1);
+        OffsetDateTime march = OffsetDateTime.now().minusMonths(4);
+        UUID juneSession = sessionLog.append(null, "june",
+                List.of(new SessionLogService.LogEntry("user", NEW)), june);
+        UUID juneUtterance = sessionLog.utterancesForSession(juneSession).get(0).getId();
+        FactEntity existing = conflictResolver.handleNewFact(
+                candidate(NEW, juneSession, juneUtterance, 0)).fact();
+
+        String correctionStatement =
+                "Correction: the project database uses PostgreSQL version 15";
+        UUID marchSession = sessionLog.append(null, "march",
+                List.of(new SessionLogService.LogEntry("user", correctionStatement)), march);
+        UUID marchUtterance = sessionLog.utterancesForSession(marchSession).get(0).getId();
+        FactEntity correction = conflictResolver.handleNewFact(candidate(
+                correctionStatement, marchSession, marchUtterance, 0, true)).fact();
+
+        FactEntity reloadedExisting = factStore.find(existing.getId()).orElseThrow();
+        assertThat(reloadedExisting.getStatus()).isEqualTo(FactStatus.RETRACTED);
+        assertThat(reloadedExisting.getSupersededBy()).isEqualTo(correction.getId());
+
+        FactEntity reloadedCorrection = factStore.find(correction.getId()).orElseThrow();
+        assertThat(reloadedCorrection.getStatus()).isEqualTo(FactStatus.ACTIVE);
+        assertThat(reloadedCorrection.getConfidence()).isEqualTo(0.95);
+        assertThat(factStore.relationsFrom(correction.getId()))
+                .anyMatch(r -> r.getToFactId().equals(existing.getId())
+                        && r.getRelation() == dev.nini.memstore.domain.RelationType.SUPERSEDES);
+    }
+
+    @Test
+    void r4_extractionDetectedCorrectionRetractsTarget() {
+        OffsetDateTime march = OffsetDateTime.now().minusMonths(4);
+        OffsetDateTime june = OffsetDateTime.now().minusMonths(1);
+        UUID marchSession = sessionLog.append(null, "march",
+                List.of(new SessionLogService.LogEntry("user", OLD)), march);
+        extraction.extract(marchSession);
+
+        UUID juneSession = sessionLog.append(null, "june",
+                List.of(new SessionLogService.LogEntry("user",
+                        "Correction: the project database uses PostgreSQL version 17")),
+                june);
+        ExtractionService.ExtractionResult result = extraction.extract(juneSession);
+        assertThat(result.created()).isEqualTo(1);
+
+        // The correction speech act retracts the target instead of superseding it.
+        List<FactEntity> retracted = factStore.findByStatus(FactStatus.RETRACTED);
+        assertThat(retracted).hasSize(1);
+        assertThat(retracted.get(0).getStatement()).contains("15");
+
+        List<FactEntity> active = factStore.findByStatus(FactStatus.ACTIVE);
+        assertThat(active).hasSize(1);
+        assertThat(active.get(0).getStatement()).contains("17");
+        assertThat(active.get(0).getConfidence()).isEqualTo(0.95);
+    }
+
     private FactCandidate candidate(String statement, UUID sessionId, UUID utteranceId,
                                     int seq) {
+        return candidate(statement, sessionId, utteranceId, seq, false);
+    }
+
+    private FactCandidate candidate(String statement, UUID sessionId, UUID utteranceId,
+                                    int seq, boolean explicitCorrection) {
         return new FactCandidate(statement, FactType.DECISION, 0.9,
                 embeddingProvider.embed(statement), embeddingProvider.modelId(),
-                List.of(utteranceId), sessionId, seq, false);
+                List.of(utteranceId), sessionId, seq, explicitCorrection);
     }
 }

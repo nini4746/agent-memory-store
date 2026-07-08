@@ -1,6 +1,6 @@
 # Benchmark report
 
-- Run at: 2026-07-07T14:42:24.428120-07:00
+- Run at: 2026-07-07T21:34:23.852876-07:00
 - LLM provider: fake (model claude-opus-4-8)
 - Embedding provider: fake (model fake-embed-1536, dim 1536)
 - Scenarios: 30
