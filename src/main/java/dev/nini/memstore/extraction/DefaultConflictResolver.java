@@ -4,6 +4,7 @@ import dev.nini.memstore.domain.FactEntity;
 import dev.nini.memstore.domain.FactStatus;
 import dev.nini.memstore.domain.RelationType;
 import dev.nini.memstore.domain.SessionEntity;
+import dev.nini.memstore.config.ConflictProperties;
 import dev.nini.memstore.llm.LlmClient;
 import dev.nini.memstore.repo.SessionRepository;
 import dev.nini.memstore.search.FactVectorSearch;
@@ -29,7 +30,6 @@ import org.springframework.stereotype.Component;
 public class DefaultConflictResolver implements ConflictResolver {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultConflictResolver.class);
-    private static final double CANDIDATE_THRESHOLD = 0.80;
     private static final double REVIVAL_THRESHOLD = 0.92;
     private static final double CORRECTION_CONFIDENCE = 0.95;
 
@@ -42,16 +42,19 @@ public class DefaultConflictResolver implements ConflictResolver {
     private final SessionRepository sessions;
     private final PropagationService propagation;
     private final JdbcTemplate jdbc;
+    private final ConflictProperties conflict;
 
     public DefaultConflictResolver(FactStore factStore, FactVectorSearch vectorSearch,
                                    LlmClient llm, SessionRepository sessions,
-                                   PropagationService propagation, JdbcTemplate jdbc) {
+                                   PropagationService propagation, JdbcTemplate jdbc,
+                                   ConflictProperties conflict) {
         this.factStore = factStore;
         this.vectorSearch = vectorSearch;
         this.llm = llm;
         this.sessions = sessions;
         this.propagation = propagation;
         this.jdbc = jdbc;
+        this.conflict = conflict;
     }
 
     @Override
@@ -62,13 +65,27 @@ public class DefaultConflictResolver implements ConflictResolver {
             return created(saveNew(candidate, true));
         }
 
+        int limit = conflict.getCandidateLimit();
+        double threshold = conflict.getCandidateThreshold();
         List<ScoredFactRow> nearby;
         try {
-            nearby = vectorSearch.topK(candidate.embedding(), 5, List.of(FactStatus.ACTIVE))
-                    .stream().filter(r -> r.similarity() >= CANDIDATE_THRESHOLD).toList();
+            nearby = vectorSearch.topK(candidate.embedding(), limit, List.of(FactStatus.ACTIVE))
+                    .stream().filter(r -> r.similarity() >= threshold).toList();
         } catch (RuntimeException e) {
             log.warn("vector search failed during conflict detection: {}", e.getMessage());
             return created(saveNew(candidate, false));
+        }
+        if (nearby.size() == limit) {
+            // Saturated window: every one of the top-k active neighbours cleared
+            // the similarity threshold, so a (k+1)-th neighbour above the
+            // threshold was never fetched. A contradiction sitting just outside
+            // this window is silently missed (see ConflictWindowBoundaryTest).
+            // This log is the signal that conflict detection may be incomplete
+            // for this candidate; widen memstore.conflict.candidate-limit if it
+            // fires often.
+            log.warn("conflict-candidate window saturated (limit={}, threshold={}): all "
+                    + "top-{} active neighbours cleared the threshold; a contradiction "
+                    + "outside the window may be missed", limit, threshold, limit);
         }
         if (nearby.isEmpty()) {
             return created(saveNew(candidate, false));
@@ -172,7 +189,7 @@ public class DefaultConflictResolver implements ConflictResolver {
 
     private boolean matchesRetracted(FactCandidate candidate) {
         try {
-            return vectorSearch.topK(candidate.embedding(), 5,
+            return vectorSearch.topK(candidate.embedding(), conflict.getCandidateLimit(),
                             List.of(FactStatus.RETRACTED)).stream()
                     .anyMatch(r -> r.similarity() >= REVIVAL_THRESHOLD);
         } catch (RuntimeException e) {

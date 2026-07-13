@@ -49,6 +49,13 @@ memstore:
     weight-recency: 0.25
     weight-confidence: 0.20
     needs-review-penalty: 0.5
+  # Conflict-detection candidate window (SPEC R4). Only the nearest
+  # candidate-limit active facts with similarity >= candidate-threshold are
+  # inspected for contradictions; a contradiction outside this window is missed.
+  # Defaults preserve historical behaviour (top-5, 0.80).
+  conflict:
+    candidate-limit: 5
+    candidate-threshold: 0.80
   budget:
     default-tokens: 2000
     max-tokens: 8000
