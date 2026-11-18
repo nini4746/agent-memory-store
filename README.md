@@ -197,6 +197,8 @@ agent-memory-store/
 
 - [docs/SRS.md](docs/SRS.md) - 요구사항 명세
 - [docs/SDS.md](docs/SDS.md) - 설계 명세: 구성도, 시퀀스, ERD/자료구조, 모듈
+- [docs/adr/](docs/adr/README.md) - 설계 결정 기록
+- [CHANGELOG.md](CHANGELOG.md) - 변경 이력
 - [.planning/SPEC.md](.planning/SPEC.md) - 요구사항과 수용 기준
 - [.planning/grilling-post-impl.md](.planning/grilling-post-impl.md) - 구현 후 기준별 검증, 발견 결함, 남은 설계 갭
 - [bench/MEMFAIL-NOTES.md](bench/MEMFAIL-NOTES.md) - MemFail 조사 기록

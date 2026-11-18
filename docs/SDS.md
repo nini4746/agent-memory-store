@@ -562,6 +562,8 @@ contradicts/supersedes 간선은 해소 기록이므로 따라가지 않습니�
 
 ## 4. 설계 근거
 
+각 결정의 배경과 결과는 [ADR](adr/README.md)에 기록되어 있습니다.
+
 | 결정 | 대안 | 선택 이유 |
 |---|---|---|
 | 상태는 소프트 상태(superseded/retracted/expired), 행은 삭제 안 함 | 물리 삭제 | 이력과 출처를 inspect로 추적하고, 잘못된 망각을 되짚을 수 있게 합니다. |
